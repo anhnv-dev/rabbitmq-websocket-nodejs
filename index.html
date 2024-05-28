@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Socket.IO chat</title>
+</head>
+<body>
+<ul id="messages"></ul>
+<div>
+    <label>Name</label> <br>
+    <input name="name" type="text" value="Van Anh">
+</div>
+<br>
+<div>
+    <label>Title</label> <br>
+    <input name="title" autocomplete="off" value="Đã tải lên 1 file trong Create a Pacs.008 Foreign Currency "/>
+</div>
+<br>
+<button id="send_notify">Submit</button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.1.js"></script>
+
+<script>
+    var socket = io();
+    $('#send_notify').on('click', function (e) {
+        let name = $('input[name="name"]').val();
+        let title = $('input[name="title"]').val();
+        let time = getCurrentTime();
+
+        socket.emit('chat message', title, name, time);
+    });
+
+    function getCurrentTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0'); // Tháng bắt đầu từ 0
+        const year = now.getFullYear();
+
+        // return `${hours}:${minutes}:${seconds} ${day}/${month}/${year}`;
+        return `${hours}:${minutes}:${seconds}`;
+    }
+</script>
+</body>
+</html>
