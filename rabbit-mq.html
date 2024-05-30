@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Socket.IO chat</title>
+</head>
+<body>
+
+<div>
+    <button id="sendButton">Send Notification</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+    document.getElementById('sendButton').addEventListener('click', function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/send-notification', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    console.log('Notification sent successfully')
+                } else {
+                    console.log('Failed to send notification')
+                }
+            }
+        };
+        var message = { message: 'Your notification message here' }; // Thay đổi nội dung thông điệp tại đây
+        xhr.send(JSON.stringify(message));
+    });
+</script>
+</body>
+</html>
