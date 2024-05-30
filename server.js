@@ -6,7 +6,7 @@ const {Server} = require("socket.io");
 const io = new Server(server);
 const amqp = require('amqplib');
 
-// cors
+// ----- cors -----
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
@@ -14,7 +14,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// ============================= RabbitMQ & Make QUEUE =============================
+// ----- RabbitMQ & Make QUEUE -----
 const QUEUE_NAME = 'notifications';
 
 async function connectRabbitMQ() {
@@ -22,25 +22,33 @@ async function connectRabbitMQ() {
         const connection = await amqp.connect('amqp://localhost');
         const channel = await connection.createChannel();
 
-        // make queue
-        await channel.assertQueue(QUEUE_NAME, { durable: false });
+        // 1. Make queue
+        await channel.assertQueue(QUEUE_NAME, {durable: false});
 
-        // consume
+        // 2. Consume
         channel.consume(QUEUE_NAME, (message) => {
-            console.log("---- Tiêu thụ: ")
-            const data = JSON.parse(message.content.toString());
-            io.emit('notification', data);
-        }, { noAck: true });
+            io.emit('notification', "message from nodejs");
+        }, {noAck: true});
 
+        // 3. Route sent message
+        app.post('/send-notification', async (req, res) => {
+            try {
+                channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify({message: "Hi Van Anh"})));
+                res.status(200).send('Notification sent successfully');
+            } catch (error) {
+                console.error('Error sending notification', error);
+                res.status(500).send('Failed to send notification');
+            }
+        });
 
-        console.log('Connected to RabbitMQ');
     } catch (error) {
         console.error('Error connecting to RabbitMQ', error);
     }
 }
+
 connectRabbitMQ().then(r => {});
 
-// ============================= routing =============================
+
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
@@ -49,32 +57,13 @@ app.get('/rabbit-mq', (req, res) => {
     res.sendFile(__dirname + '/rabbit-mq.html');
 });
 
-app.post('/send-notification', async (req, res) => {
-    try {
-        const connection = await amqp.connect('amqp://localhost');
-        const channel = await connection.createChannel();
-        const msg = "Hi Van Anh";
-
-        await channel.assertQueue(QUEUE_NAME, { durable: false });
-
-        channel.sendToQueue(QUEUE_NAME, Buffer.from(JSON.stringify({ message: msg })));
-        console.log('Notification sent:', msg);
-
-        res.status(200).send('Notification sent successfully');
-    } catch (error) {
-        console.error('Error sending notification', error);
-        res.status(500).send('Failed to send notification');
-    }
-});
-
-// socket (không qua rabbit mq - demo 1)
+// socket (demo 1)
 io.on('connection', (socket) => {
     socket.on('chat message', (title, name, time) => {
-        console.log(title, name, time)
         io.emit('chat message', title, name, time);
     });
 });
 
 server.listen(3002, () => {
-    console.log('listening on *:3002');
+    console.log('listening on http://localhost:3002');
 });
